@@ -10,6 +10,49 @@ var (
 	xRealIP       = http.CanonicalHeaderKey("X-Real-IP")
 )
 
+type ProxyChecker struct {
+	ErrorFunc      func(statusCode int, message string, w http.ResponseWriter, r *http.Request)
+	UseProxy       bool
+	TrustedProxies []string
+}
+
+func (p ProxyChecker) Handle(h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		forwardedFor := r.Header.Get(xForwardedFor)
+		// Check if the application is expecting to use a proxy
+		if !p.UseProxy {
+			// If there's an X-Forwarded-For header, we've used a proxy without expecting one
+			if forwardedFor != "" {
+				p.ErrorFunc(http.StatusBadRequest, "Detected proxy: but application is not configured to use one", w, r)
+				return
+			}
+		} else {
+			// We expected a proxy,but didn't find an X-Forwarded-For header
+			if forwardedFor == "" {
+				p.ErrorFunc(http.StatusBadRequest, "Expected a proxy: X-Forwarded-For empty", w, r)
+				return
+			}
+			// Find the origin IP from the request
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				ip = r.RemoteAddr
+			}
+			// Check origin IP vs the list of trusted proxies
+			if !CheckIPInNetworkList(ip, p.TrustedProxies) {
+				p.ErrorFunc(http.StatusBadRequest, "Untrusted proxy", w, r)
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
+func defaultErrorFunc(statusCode int, message string, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(statusCode)
+	w.Write([]byte(message))
+}
+
 // CheckIPInNetworkList checks for an IP address in a list of networks
 // The list of networks can be IP addresses or CIDR blocks
 func CheckIPInNetworkList(clientIP string, networkList []string) bool {
@@ -46,39 +89,10 @@ func CheckIPInNetworkList(clientIP string, networkList []string) bool {
 // CheckProxy is a middleware that checks the RequestAddr against a list of known
 // trusted proxies.
 func CheckProxy(useProxy bool, trustedProxies []string) func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			forwardedFor := r.Header.Get(xForwardedFor)
-			// Check if the application is expecting to use a proxy
-			if !useProxy {
-				// If there's an X-Forwarded-For header, we've used a proxy without expecting one
-				if forwardedFor != "" {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte("Detected proxy: but application is not configured to use one"))
-					return
-				}
-			} else {
-				// We expected a proxy,but didn't find an X-Forwarded-For header
-				if forwardedFor == "" {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte("Expected a proxy: X-Forwarded-For empty"))
-					return
-				}
-				// Find the origin IP from the request
-				ip, _, err := net.SplitHostPort(r.RemoteAddr)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				// Check origin IP vs the list of trusted proxies
-				if !CheckIPInNetworkList(ip, trustedProxies) {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte("Untrusted proxy"))
-					return
-				}
-			}
-			h.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
+	p := ProxyChecker{
+		ErrorFunc:      defaultErrorFunc,
+		UseProxy:       useProxy,
+		TrustedProxies: trustedProxies,
 	}
+	return p.Handle
 }
