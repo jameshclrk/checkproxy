@@ -151,3 +151,29 @@ func TestCheckProxyEnabledWithForwardedIPRemoteAddrFormat(t *testing.T) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
+
+func TestProxyCheckerWithCustomErrorFunc(t *testing.T) {
+	errorString := "error!!1!"
+	customFn := func(s int, m string, w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(999)
+		w.Write([]byte(errorString))
+	}
+	checker := ProxyChecker{
+		UseProxy:  true,
+		ErrorFunc: customFn,
+	}
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Add("X-Forwarded-For", "100.100.100.100")
+	req.RemoteAddr = "10.0.0.1"
+	rec := httptest.NewRecorder()
+
+	checker.Handle(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+
+	if rec.Code != 999 {
+		t.Fatal("Response Code should be 999")
+	}
+	body := rec.Body.Bytes()
+	if bytes.Compare(body, []byte(errorString)) != 0 {
+		t.Fatalf("Unexpected output (got %v)", string(body))
+	}
+}
