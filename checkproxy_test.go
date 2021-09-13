@@ -38,13 +38,13 @@ func TestCheckIPInNetworkList(t *testing.T) {
 	}
 }
 
-func TestCheckProxiesDisabledWithForwarded(t *testing.T) {
+func TestCheckProxyDisabledWithForwarded(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Add("X-Forwarded-For", "100.100.100.100")
 	rec := httptest.NewRecorder()
 
 
-    CheckProxies(false, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(false, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatal("Response Code should be 400")
@@ -55,12 +55,12 @@ func TestCheckProxiesDisabledWithForwarded(t *testing.T) {
     }
 }
 
-func TestCheckProxiesDisabledWithoutForwarded(t *testing.T) {
+func TestCheckProxyDisabledWithoutForwarded(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 
-    CheckProxies(false, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(false, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatal("Response Code should be 200")
@@ -71,12 +71,12 @@ func TestCheckProxiesDisabledWithoutForwarded(t *testing.T) {
     }
 }
 
-func TestCheckProxiesEnabledWithoutForwarded(t *testing.T) {
+func TestCheckProxyEnabledWithoutForwarded(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
 
 
-    CheckProxies(true, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(true, []string{""})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatal("Response Code should be 400")
@@ -88,13 +88,13 @@ func TestCheckProxiesEnabledWithoutForwarded(t *testing.T) {
 }
 
 
-func TestCheckProxiesEnabledWithForwardedTrustedProxy(t *testing.T) {
+func TestCheckProxyEnabledWithForwardedTrustedProxy(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Add("X-Forwarded-For", "100.100.100.100")
     req.RemoteAddr = "10.0.0.1:10101"
 	rec := httptest.NewRecorder()
 
-    CheckProxies(true, []string{"10.0.0.1"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(true, []string{"10.0.0.1"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatal("Response Code should be 200")
@@ -105,13 +105,13 @@ func TestCheckProxiesEnabledWithForwardedTrustedProxy(t *testing.T) {
     }
 }
 
-func TestCheckProxiesEnabledWithForwardedUntrustedProxy(t *testing.T) {
+func TestCheckProxyEnabledWithForwardedUntrustedProxy(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Add("X-Forwarded-For", "100.100.100.100")
     req.RemoteAddr = "10.0.0.1:10101"
 	rec := httptest.NewRecorder()
 
-    CheckProxies(true, []string{"10.0.0.2"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(true, []string{"10.0.0.2"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatal("Response Code should be 400")
@@ -122,13 +122,13 @@ func TestCheckProxiesEnabledWithForwardedUntrustedProxy(t *testing.T) {
     }
 }
 
-func TestCheckProxiesEnabledWithForwardedUnexpectedRemoteAddrFormat(t *testing.T) {
+func TestCheckProxyEnabledWithForwardedUnexpectedRemoteAddrFormat(t *testing.T) {
     req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Add("X-Forwarded-For", "100.100.100.100")
     req.RemoteAddr = "10.0.0.1"
 	rec := httptest.NewRecorder()
 
-    CheckProxies(true, []string{"10.0.0.2"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
+    CheckProxy(true, []string{"10.0.0.2"})(http.HandlerFunc(okResponse)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatal("Response Code should be 500")

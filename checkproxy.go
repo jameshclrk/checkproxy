@@ -43,9 +43,9 @@ func CheckIPInNetworkList(clientIP string, networkList []string) bool {
 	return false
 }
 
-// CheckProxies is a middleware that checks the RequestAddr against a list of known
+// CheckProxy is a middleware that checks the RequestAddr against a list of known
 // trusted proxies.
-func CheckProxies(useProxy bool, trustedProxies []string) func(http.Handler) http.Handler {
+func CheckProxy(useProxy bool, trustedProxies []string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			forwardedFor := r.Header.Get(xForwardedFor)
