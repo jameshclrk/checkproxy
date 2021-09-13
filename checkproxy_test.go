@@ -49,7 +49,7 @@ func TestCheckProxyDisabledWithForwarded(t *testing.T) {
 		t.Fatal("Response Code should be 400")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte("Detected proxy: but application is not configured to use one")) != 0 {
+	if !bytes.Equal(body, []byte("Detected proxy: but application is not configured to use one")) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -64,7 +64,7 @@ func TestCheckProxyDisabledWithoutForwarded(t *testing.T) {
 		t.Fatal("Response Code should be 200")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, ok) != 0 {
+	if !bytes.Equal(body, ok) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -79,7 +79,7 @@ func TestCheckProxyEnabledWithoutForwarded(t *testing.T) {
 		t.Fatal("Response Code should be 400")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte("Expected a proxy: X-Forwarded-For empty")) != 0 {
+	if !bytes.Equal(body, []byte("Expected a proxy: X-Forwarded-For empty")) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -96,7 +96,7 @@ func TestCheckProxyEnabledWithForwardedTrustedProxy(t *testing.T) {
 		t.Fatal("Response Code should be 200")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, ok) != 0 {
+	if !bytes.Equal(body, ok) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -113,7 +113,7 @@ func TestCheckProxyEnabledWithForwardedUntrustedProxy(t *testing.T) {
 		t.Fatal("Response Code should be 400")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte("Untrusted proxy")) != 0 {
+	if !bytes.Equal(body, []byte("Untrusted proxy")) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -130,7 +130,7 @@ func TestCheckProxyEnabledWithForwardedUnexpectedRemoteAddrFormat(t *testing.T) 
 		t.Fatal("Response Code should be 400")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte("Untrusted proxy")) != 0 {
+	if !bytes.Equal(body, []byte("Untrusted proxy")) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -147,7 +147,7 @@ func TestCheckProxyEnabledWithForwardedIPRemoteAddrFormat(t *testing.T) {
 		t.Fatal("Response Code should be 400")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte("Untrusted proxy")) != 0 {
+	if !bytes.Equal(body, []byte("Untrusted proxy")) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
@@ -173,7 +173,7 @@ func TestProxyCheckerWithCustomErrorFunc(t *testing.T) {
 		t.Fatal("Response Code should be 999")
 	}
 	body := rec.Body.Bytes()
-	if bytes.Compare(body, []byte(errorString)) != 0 {
+	if !bytes.Equal(body, []byte(errorString)) {
 		t.Fatalf("Unexpected output (got %v)", string(body))
 	}
 }
